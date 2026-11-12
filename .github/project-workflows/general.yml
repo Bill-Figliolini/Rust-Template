@@ -16,6 +16,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Run tests
         run: cargo nextest run
+      - name: Run doctests # nextest doesn't run these
+        run: cargo test --doc
 
   fmt:
     name: Rustfmt

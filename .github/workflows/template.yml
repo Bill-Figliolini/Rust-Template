@@ -1,0 +1,54 @@
+# CI for the template itself. Cargo.toml here contains cargo-generate
+# placeholders and can't be built directly, so generate a throwaway project and
+# run the same checks as .github/project-workflows/general.yml inside it.
+# Keep the two in sync. This file is not copied into generated projects.
+name: Template
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  generate-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt, clippy, llvm-tools-preview
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-generate,cargo-nextest,cargo-llvm-cov
+
+      - name: Generate project
+        run: cargo generate --path . --name ci-test --silent --destination "$RUNNER_TEMP"
+
+      - name: Check generated layout
+        working-directory: ${{ runner.temp }}/ci-test
+        run: |
+          test -f .github/workflows/general.yml
+          test ! -e .github/project-workflows
+          test ! -e cargo-generate.toml
+          test ! -e post-generate.rhai
+          test ! -e .github/workflows/template.yml
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ runner.temp }}/ci-test
+
+      - name: Rustfmt
+        working-directory: ${{ runner.temp }}/ci-test
+        run: cargo +nightly fmt --check
+      - name: Clippy
+        working-directory: ${{ runner.temp }}/ci-test
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Tests
+        working-directory: ${{ runner.temp }}/ci-test
+        run: cargo nextest run
+      - name: Doctests
+        working-directory: ${{ runner.temp }}/ci-test
+        run: cargo test --doc
+      - name: Coverage
+        working-directory: ${{ runner.temp }}/ci-test
+        run: cargo llvm-cov --workspace --all-features --summary-only --fail-under-lines 80

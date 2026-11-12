@@ -1,0 +1,15 @@
+[package]
+name = "{{project-name}}"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+# Restriction lints configured by clippy.toml. They warn locally; CI and the
+# pre-commit hook run clippy with `-D warnings`, so they fail there.
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+indexing_slicing = "warn"
+excessive_nesting = "warn"

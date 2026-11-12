@@ -1,0 +1,17 @@
+[template]
+# Not copied into generated projects: files used only by the template repo,
+# plus local, gitignored state that `cargo generate --path .` would pick up.
+ignore = [
+  ".github/workflows/template.yml",
+  ".devenv",
+  ".direnv",
+  ".pre-commit-config.yaml",
+  "target",
+]
+# Copied verbatim, without placeholder substitution. GitHub Actions' `${{ }}`
+# syntax collides with cargo-generate's Liquid templating, and the Nix files
+# have nothing to substitute.
+exclude = [".github/**", "devenv.lock", "devenv.nix"]
+
+[hooks]
+post = ["post-generate.rhai"]

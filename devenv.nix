@@ -1,6 +1,11 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
+  # cargo-generate.toml exists only in the template repo (it isn't copied into
+  # generated projects). There, Cargo.toml has placeholders and can't build,
+  # so the cargo-based shell check and git hook are skipped.
+  isTemplate = builtins.pathExists ./cargo-generate.toml;
+
   # Dev tools only need to run, not pass their own test suites. When a nixpkgs
   # bump leaves one of them uncached, Nix builds it from source and its tests
   # can fail in the sandbox (e.g. cargo-llvm-cov vs. a newer LLVM), breaking
@@ -13,7 +18,7 @@ in
   languages.rust = {
     enable = true;
     channel = "nightly";
-    components = [ "rustc" "cargo" "clippy" "rust-analyzer" "rustfmt" ];
+    components = [ "rustc" "cargo" "clippy" "rust-analyzer" "rustfmt" "llvm-tools-preview" ];
   };
   packages = with pkgs; [
     bacon
@@ -29,14 +34,14 @@ in
     '';
     packages = [ pkgs.watchexec ];
   };
-  enterShell = ''
+  enterShell = lib.optionalString (!isTemplate) ''
     if [ -f Cargo.toml ]; then
       echo "Crates ready to update:"
       cargo update -n
     fi
   '';
   git-hooks.hooks = {
-      clippy.enable = true;
+      clippy.enable = !isTemplate;
       clippy.settings.denyWarnings = true;
   };
 }
